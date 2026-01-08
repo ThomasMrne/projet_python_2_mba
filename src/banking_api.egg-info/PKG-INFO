@@ -1,3 +1,19 @@
+Metadata-Version: 2.4
+Name: banking-api
+Version: 1.0.0
+Summary: API for portfolio asset retrieval management
+Author-email: Thomas MARIE-ANNE <t_marieanne@stu-mba-esg.com>
+Project-URL: Homepage, https://github.com/ton-profil/banking-project
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.100.0
+Requires-Dist: uvicorn>=0.20.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: python-multipart
+Requires-Dist: httpx
+
 > **Note:**
 > Ceci est une version intermédiaire (V1) soumise pour feedback.
 > L'architecture technique, les tests et le packaging sont complets.
