@@ -5,31 +5,40 @@ from pathlib import Path
 global_dataframe = None
 
 
+def clean_currency_col(df, col):
+    """Fonction aide pour nettoyer une colonne monétaire."""
+    if col not in df.columns or df[col].dtype != "object":
+        return
+
+    # On nettoie en plusieurs étapes courtes
+    series = df[col].astype(str)
+    series = series.str.replace("$", "", regex=False)
+    series = series.str.replace(",", "", regex=False)
+    df[col] = pd.to_numeric(series, errors="coerce")
+
+
 def load_dataset():
     """
-    Charge le fichier CSV et nettoie les symboles monétaires ($).
+    Charge le fichier CSV et nettoie les symboles monétaires.
     """
     global global_dataframe
 
     base_path = Path(__file__).resolve().parents[3]
-    data_path = base_path / "data" / "transactions.csv"
+    csv_path = base_path / "data" / "transactions.csv"
 
-    print(f"Chargement des données depuis : {data_path}")
+    print(f"Chargement : {csv_path}")
 
-    if not data_path.exists():
-        print("ERREUR : Le fichier transactions.csv est introuvable !")
+    if not csv_path.exists():
+        print("ERREUR : csv introuvable !")
         return False
 
     try:
         # 1. Chargement
-        df = pd.read_csv(data_path)
-
-        # Nettoyage des noms de colonnes
+        df = pd.read_csv(csv_path)
         df.columns = df.columns.str.strip()
 
-        # 2. NETTOYAGE DES DEVISES ($) - C'est ici que ça bloquait
-        # Liste des colonnes qui contiennent de l'argent
-        money_cols = [
+        # 2. Nettoyage
+        target_cols = [
             "amount",
             "oldbalanceOrg",
             "newbalanceOrig",
@@ -37,27 +46,18 @@ def load_dataset():
             "newbalanceDest",
         ]
 
-        for col in money_cols:
-            if col in df.columns:
-                # Si la colonne est considérée comme du texte (object), on la nettoie
-                if df[col].dtype == "object":
-                    # On remplace le $ et les virgules éventuelles
-                    df[col] = df[col].astype(str).str.replace("$", "", regex=False)
-                    df[col] = df[col].str.replace(",", "", regex=False)
-                    # On convertit en nombre
-                    df[col] = pd.to_numeric(df[col], errors="coerce")
+        for col in target_cols:
+            clean_currency_col(df, col)
 
-        # 3. Remplacer les cases vides par 0
         df.fillna(0, inplace=True)
-
         global_dataframe = df
-        print(
-            f"Succès ! {len(global_dataframe)} transactions chargées et nettoyées ($ retirés)."
-        )
+
+        count = len(df)
+        print(f"Succès ! {count} transactions chargées.")
         return True
 
     except Exception as e:
-        print(f"Erreur GRAVE lors de la lecture du CSV : {e}")
+        print(f"Erreur lecture CSV : {e}")
         return False
 
 

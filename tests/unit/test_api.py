@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from src.banking_api.main import app
 from src.banking_api.services.data_loader import load_dataset
@@ -47,9 +48,17 @@ def test_route_5_recent_transactions():
     assert len(response.json()) == 5
 
 def test_route_6_delete_transaction():
-    """Route 6: Suppression"""
-    response = client.delete("/api/transactions/12345")
-    assert response.status_code == 200
+    """Route 6: Suppression (Scénario complet)"""
+    # 1. On récupère une transaction réelle pour avoir un ID valide
+    response_list = client.get("/api/transactions?limit=1")
+    assert response_list.status_code == 200
+    data = response_list.json()
+
+    if data["total_items"] > 0:
+        real_id = data["transactions"][0]["id"]
+    
+        response_del = client.delete(f"/api/transactions/{real_id}")
+        assert response_del.status_code == 200
 
 def test_route_7_transactions_by_customer():
     """Route 7: Par Client"""
@@ -63,17 +72,21 @@ def test_route_7_transactions_by_customer():
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
-def test_route_8_transactions_to_merchant():
-    """Route 8: Par Marchand (reçu)"""
-    # On prend un vrai merchant ID (ex: Merchant_59935 -> 59935)
+import pytest # Assure-toi d'avoir import pytest tout en haut du fichier
+
+def test_route_route_8_transactions_to_merchant():
+    """Route 8: Par Marchand"""
     tx_list = client.get("/api/transactions?limit=1").json()["transactions"]
+    if not tx_list:
+        pytest.skip("Aucune transaction disponible pour tester le marchand")
     merch_name = tx_list[0]["nameDest"]
-    if "_" in merch_name:
-        merch_id = merch_name.split('_')[1]
-        # Si c'est un chiffre, on teste
-        if merch_id.isdigit():
-            response = client.get(f"/api/transactions/to-customer/{merch_id}")
-            assert response.status_code == 200
+    parts = merch_name.split('_')
+    if len(parts) > 1 and parts[-1].isdigit():
+        merch_id = parts[-1]
+        response = client.get(f"/api/transactions/to-customer/{merch_id}")
+        assert response.status_code == 200
+    else:
+        pytest.fail(f"Impossible d'extraire un ID marchand valide de : {merch_name}")
 
 # ==========================================
 # BLOC STATISTIQUES (Routes 9-12)

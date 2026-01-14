@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query, Path
 from typing import Optional, List
+from fastapi import APIRouter, HTTPException, Query, Path
 from pydantic import BaseModel
 
-# Import du nouveau service
+# Import du service
 from src.banking_api.services import transactions_service
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
@@ -53,7 +53,11 @@ def get_transactions(
     max_amount: Optional[float] = None,
 ):
     return transactions_service.get_transactions(
-        page, limit, type, min_amount, max_amount
+        page,
+        limit,
+        type,
+        min_amount,
+        max_amount
     )
 
 
@@ -73,8 +77,13 @@ def search_transactions(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
 ):
+    # Appel long découpé pour éviter E501
     return transactions_service.get_transactions(
-        page, limit, criteria.type, criteria.min_amount, criteria.max_amount
+        page,
+        limit,
+        criteria.type,
+        criteria.min_amount,
+        criteria.max_amount
     )
 
 
@@ -90,7 +99,9 @@ def get_transactions_to_merchant(merchant_id: int):
 
 @router.delete("/{id}")
 def delete_transaction(id: str):
-    return {"message": f"Transaction {id} supprimée avec succès (Simulation)"}
+    return {
+        "message": f"Transaction {id} supprimée avec succès (Simulation)"
+    }
 
 
 @router.get("/{id}", response_model=Transaction)
@@ -98,8 +109,13 @@ def get_transaction_by_id(id: str = Path(..., title="Transaction ID")):
     try:
         search_id = int(id)
         result = transactions_service.get_transaction_by_id(search_id)
+
         if not result:
-            raise HTTPException(status_code=404, detail="Transaction non trouvée")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Transaction with id {search_id} not found"
+            )
         return result
+
     except ValueError:
         raise HTTPException(status_code=400, detail="ID invalide")

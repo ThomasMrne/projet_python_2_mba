@@ -6,7 +6,7 @@ def get_global_stats():
     """
     Route 9: Version corrigée pour un taux de fraude réaliste.
     """
-    df = get_data()
+    df = get_data().copy()
     if df.empty:
         return {
             "total_transactions": 0,
@@ -16,18 +16,24 @@ def get_global_stats():
         }
 
     total_transactions = len(df)
+    fraud_count = 0
 
-    # Correction Fraude : On ne compte que si 'errors' n'est ni 0, ni vide, ni "0"
+    # On ne compte que si 'errors' n'est ni 0, ni vide, ni "0"
     if "errors" in df.columns:
-        # On filtre pour garder uniquement les vraies erreurs (texte)
-        fraud_df = df[
-            (df["errors"] != 0) & (df["errors"] != "0") & (df["errors"].notna())
-        ]
+        # Masque sorti pour éviter E501 et E122
+        mask = (
+            (df["errors"] != 0)
+            & (df["errors"] != "0")
+            & (df["errors"].notna())
+        )
+        fraud_df = df[mask]
         fraud_count = len(fraud_df)
-    else:
-        fraud_count = 0
 
-    fraud_rate = fraud_count / total_transactions if total_transactions > 0 else 0
+    # Calcul du taux
+    fraud_rate = 0.0
+    if total_transactions > 0:
+        fraud_rate = fraud_count / total_transactions
+
     avg_amount = df["amount"].abs().mean()
 
     most_common_type = "N/A"
@@ -39,9 +45,7 @@ def get_global_stats():
 
     return {
         "total_transactions": int(total_transactions),
-        "fraud_rate": float(
-            round(fraud_rate, 5)
-        ),  # Sera maintenant proche de 0, ce qui est normal
+        "fraud_rate": float(round(fraud_rate, 5)),
         "avg_amount": float(round(avg_amount, 2)),
         "most_common_type": str(most_common_type),
     }
@@ -63,7 +67,10 @@ def get_amount_distribution():
         binned = pd.cut(amounts, bins=bins, labels=labels, right=False)
         counts = binned.value_counts().sort_index()
 
-        return {"bins": counts.index.tolist(), "counts": counts.values.tolist()}
+        return {
+            "bins": counts.index.tolist(),
+            "counts": counts.values.tolist()
+        }
     except Exception as e:
         print(f"Erreur stats distribution: {e}")
         return {"bins": [], "counts": []}
@@ -74,12 +81,16 @@ def get_stats_by_type():
     Route 11: Stats par type.
     """
     df = get_data()
-    if df.empty or "use_chip" not in df.columns:
+
+    if df.empty or "use_chip" not in df.columns or "amount" not in df.columns:
         return []
 
     stats = (
         df.groupby("use_chip")
-        .agg(count=("amount", "count"), avg_amount=("amount", "mean"))
+        .agg(
+            count=("amount", "count"),
+            avg_amount=("amount", "mean")
+        )
         .reset_index()
     )
 
@@ -98,12 +109,20 @@ def get_daily_stats():
         return []
 
     try:
+        work_df = df.copy()
         # Extraction de l'année
-        df["year"] = df["date"].astype(str).str[:4]
+        work_df["year"] = (
+            work_df["date"]
+            .astype(str)
+            .str[:4]
+        )
 
         daily = (
-            df.groupby("year")
-            .agg(count=("amount", "count"), avg_amount=("amount", "mean"))
+            work_df.groupby("year")
+            .agg(
+                count=("amount", "count"),
+                avg_amount=("amount", "mean")
+            )
             .reset_index()
             .sort_values("year")
         )
@@ -112,17 +131,14 @@ def get_daily_stats():
 
         result = []
         for _, row in daily.iterrows():
-            # Sécurisation si l'année n'est pas un chiffre
             year_val = row["year"]
             step_val = int(year_val) if year_val.isdigit() else 0
 
-            result.append(
-                {
-                    "step": step_val,
-                    "count": int(row["count"]),
-                    "avg_amount": float(row["avg_amount"]),
-                }
-            )
+            result.append({
+                "step": step_val,
+                "count": int(row["count"]),
+                "avg_amount": float(row["avg_amount"]),
+            })
 
         return result
 

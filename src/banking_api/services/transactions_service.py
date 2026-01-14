@@ -38,7 +38,11 @@ def get_transactions(
 ):
     df = get_data()
     if df.empty:
-        return {"page": page, "total_pages": 0, "total_items": 0, "transactions": []}
+        return {
+            "page": page,
+            "total_pages": 0,
+            "total_items": 0,
+            "transactions": []}
 
     filtered = df
     if type:
@@ -54,7 +58,10 @@ def get_transactions(
     end_idx = start_idx + limit
 
     paginated_data = filtered.iloc[start_idx:end_idx]
-    results = [map_row_to_transaction(row) for _, row in paginated_data.iterrows()]
+    results = [
+        map_row_to_transaction(row)
+        for _, row in paginated_data.iterrows()
+    ]
 
     return {
         "page": page,
@@ -82,18 +89,31 @@ def get_recent_transactions(n: int):
 def get_transactions_by_customer(customer_id: int):
     df = get_data()
     customer_df = df[df["client_id"] == customer_id]
-    return [map_row_to_transaction(row) for _, row in customer_df.head(50).iterrows()]
+    return [
+        map_row_to_transaction(row)
+        for _, row in customer_df.head(50).iterrows()
+    ]
 
 
 def get_transactions_to_merchant(merchant_id: int):
     df = get_data()
     merchant_df = df[df["merchant_id"] == merchant_id]
-    return [map_row_to_transaction(row) for _, row in merchant_df.head(50).iterrows()]
+    return [
+        map_row_to_transaction(row)
+        for _, row in merchant_df.head(50).iterrows()
+        ]
 
 
 def get_transaction_by_id(search_id: int):
     df = get_data()
+    if df.empty:
+        return None
+
+    if "id" not in df.columns:
+        return None
+
     row = df[df["id"] == search_id]
     if row.empty:
         return None
+
     return map_row_to_transaction(row.iloc[0])

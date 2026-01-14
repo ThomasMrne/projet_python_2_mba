@@ -25,4 +25,4 @@ Ce projet est packagé pour être installé comme une librairie Python standard.
    Placez-vous à la racine du projet et exécutez :
 
    ```bash
-   pip install -e .# banking-project
+   pip install -e .

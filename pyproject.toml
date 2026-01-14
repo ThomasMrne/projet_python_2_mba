@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/ton-profil/banking-project"
+"Homepage" = "https://github.com/ThomasMrne/projet_python_2_mba"
 
 [tool.setuptools.packages.find]
 where = ["src"]
