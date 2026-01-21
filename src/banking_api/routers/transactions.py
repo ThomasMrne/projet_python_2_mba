@@ -92,8 +92,8 @@ def get_transactions_by_customer(customer_id: int):
     return transactions_service.get_transactions_by_customer(customer_id)
 
 
-@router.get("/to-customer/{merchant_id}", response_model=List[Transaction])
-def get_transactions_to_merchant(merchant_id: int):
+@router.get("/to-merchant/{merchant_id}", response_model=List[Transaction])
+def read_transactions_to_merchant(merchant_id: int):
     return transactions_service.get_transactions_to_merchant(merchant_id)
 
 

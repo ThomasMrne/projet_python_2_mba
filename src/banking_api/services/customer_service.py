@@ -6,6 +6,9 @@ def get_all_customers(page=1, limit=10):
     """
     Route 16: Liste des clients uniques (paginée).
     """
+    page = max(1, page)
+    limit = max(1, min(limit, 100))
+    
     df = get_data()
     if df.empty:
         return {

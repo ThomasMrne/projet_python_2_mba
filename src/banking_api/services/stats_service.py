@@ -34,7 +34,7 @@ def get_global_stats():
     if total_transactions > 0:
         fraud_rate = fraud_count / total_transactions
 
-    avg_amount = df["amount"].abs().mean()
+    avg_amount = df["amount"].abs().mean() if "amount" in df.columns else 0.0
 
     most_common_type = "N/A"
     if "use_chip" in df.columns:
@@ -56,6 +56,9 @@ def get_amount_distribution():
     Route 10: Histogramme des montants.
     """
     df = get_data()
+    if "amount" not in df.columns:
+        return {"bins": [], "counts": []}
+
     if df.empty:
         return {"bins": [], "counts": []}
 

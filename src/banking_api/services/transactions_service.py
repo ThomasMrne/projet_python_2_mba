@@ -107,7 +107,7 @@ def get_transactions(
         filtered = filtered[filtered["amount"].abs() <= max_amount]
 
     total_items = len(filtered)
-    # math.ceil nécessite 'import math'
+
     total_pages = math.ceil(total_items / limit)
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
@@ -146,6 +146,8 @@ def get_recent_transactions(n: int):
 def get_transactions_by_customer(customer_id: int):
     """Filtre par client (limité à 50)."""
     df = get_data()
+    if df.empty or "client_id" not in df.columns:
+        return []
     customer_df = df[df["client_id"] == customer_id]
     return [
         map_row_to_transaction(row)
@@ -156,6 +158,8 @@ def get_transactions_by_customer(customer_id: int):
 def get_transactions_to_merchant(merchant_id: int):
     """Filtre par marchand (limité à 50)."""
     df = get_data()
+    if df.empty or "merchant_id" not in df.columns:
+        return []
     merchant_df = df[df["merchant_id"] == merchant_id]
     return [
         map_row_to_transaction(row)

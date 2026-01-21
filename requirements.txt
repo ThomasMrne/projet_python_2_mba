@@ -9,4 +9,3 @@ mypy>=1.0.0
 black
 types-requests
 numpy
-httpx
