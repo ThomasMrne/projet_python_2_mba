@@ -1,13 +1,13 @@
 # On part d'une image Python officielle légère
 FROM python:3.13-slim
 
-# On définit le dossier de travail dans le conteneur
+# Définition du dossier de travail dans le conteneur
 WORKDIR /app
 
-# On copie les fichiers de configuration indispensables
+# Copie des fichiers de configuration indispensables
 COPY pyproject.toml README.md requirements.txt ./
 
-# On copie tout le code source
+# Copie du code source
 COPY src ./src
 
 # On installe le projet et les dépendances

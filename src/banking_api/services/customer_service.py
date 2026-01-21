@@ -26,7 +26,7 @@ def get_all_customers(page=1, limit=10):
 
     page_clients = unique_clients[start:end]
 
-    # Formatage propre avec compréhension de liste verticale
+    # Formatage avec compréhension de liste verticale
     results = [
         {"id": str(cid), "name": f"Client_{cid}"}
         for cid in page_clients
@@ -45,6 +45,8 @@ def get_customer_profile(customer_id: str):
     Route 17: Profil détaillé d'un client.
     """
     df = get_data()
+    if df.empty or "client_id" not in df.columns or "amount" not in df.columns:
+        return None
     try:
         cid = int(customer_id)
         # On filtre toutes les transactions de ce client
@@ -59,7 +61,6 @@ def get_customer_profile(customer_id: str):
         # Détection de fraude potentielle
         has_fraud = False
         if "errors" in df.columns:
-            # Filtre multi-lignes aligné proprement
             fraud_rows = client_tx[
                 (client_tx["errors"] != 0)
                 & (client_tx["errors"] != "0")
@@ -67,7 +68,6 @@ def get_customer_profile(customer_id: str):
             ]
             has_fraud = not fraud_rows.empty
 
-        # Calcul des dates (extrait pour éviter E501 dans le return)
         first_seen = "N/A"
         last_seen = "N/A"
         if "date" in df.columns:

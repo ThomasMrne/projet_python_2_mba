@@ -1,30 +1,82 @@
 import math
-from typing import Dict, Any, Optional
+
 import pandas as pd
+from typing import List, Optional
+
+# Import du service
 from src.banking_api.services.data_loader import get_data
 
 
-def map_row_to_transaction(row) -> Dict[str, Any]:
-    """Helper pour transformer une ligne Pandas en dictionnaire propre"""
+def get_all_transactions(limit: int = 100) -> List[dict]:
+    """Récupère une liste simple de transactions (limitée)."""
+    df = get_data()
+    if df.empty:
+        return []
+
+    # On prend les N premiers et on convertit
+    subset = df.head(limit)
+    return [map_row_to_transaction(row) for _, row in subset.iterrows()]
+
+
+def get_transaction_by_id(search_id: int):
+    """Récupère une transaction unique par son ID."""
+    df = get_data()
+    if df.empty:
+        return None
+
+    # On vérifie que la colonne id existe
+    if "id" not in df.columns:
+        return None
+
+    # Filtre
+    row = df[df["id"] == search_id]
+    if row.empty:
+        return None
+
+    return map_row_to_transaction(row.iloc[0])
+
+
+def map_row_to_transaction(row):
+    """Transforme une ligne DataFrame en dictionnaire Transaction."""
     item = row.to_dict()
-    item["id"] = str(item["id"])
-    item["type"] = str(item.get("use_chip", "Unknown"))
-    item["nameOrig"] = f"Client_{item.get('client_id', '0')}"
-    item["nameDest"] = f"Merchant_{item.get('merchant_id', '0')}"
 
-    raw_amount = float(item.get("amount", 0.0))
-    item["amount"] = abs(raw_amount)
-    item["formatted_amount"] = f"${abs(raw_amount):,.2f}"
+    # Nettoyage global des valeurs NaN/NaT pour éviter les bugs JSON
+    for key, value in item.items():
+        if pd.isna(value):
+            item[key] = None
 
-    # Nettoyage
-    if item.get("merchant_state") == 0 or pd.isna(item.get("merchant_state")):
+    m_state = item.get("merchant_state")
+    if m_state in (0, "0") or pd.isna(m_state):
         item["merchant_state"] = None
-    if item.get("errors") == 0 or pd.isna(item.get("errors")):
+
+    err = item.get("errors")
+    if err in (0, "0") or pd.isna(err):
         item["errors"] = None
-    if pd.isna(item.get("zip")):
-        item["zip"] = None
-    if pd.isna(item.get("mcc")):
-        item["mcc"] = None
+
+    # Nettoyage spécifique : zip
+    if item.get("zip") is not None:
+        try:
+            item["zip"] = float(item["zip"])
+        except ValueError:
+            item["zip"] = None
+
+    # 1. 'type' : on prend la valeur de 'use_chip'
+    if "type" not in item:
+        item["type"] = str(item.get("use_chip", "Unknown Transaction"))
+
+    # 2. 'nameOrig' : Format "Client_ID" (avec underscore pour les tests)
+    if "nameOrig" not in item:
+        item["nameOrig"] = f"Client_{item.get('client_id', '?')}"
+
+    # 3. 'nameDest' : Format "Merchant_ID" (avec underscore pour les tests)
+    if "nameDest" not in item:
+        item["nameDest"] = f"Merchant_{item.get('merchant_id', '?')}"
+
+    item["formatted_amount"] = f"{item.get('amount', 0):.2f} €"
+
+    # Sécurisation des IDs et Dates (toujours en string)
+    item["id"] = str(item.get("id", "0"))
+    item["date"] = str(item.get("date", ""))
 
     return item
 
@@ -36,13 +88,15 @@ def get_transactions(
     min_amount: Optional[float] = None,
     max_amount: Optional[float] = None,
 ):
+    """Récupère les transactions avec pagination et filtres."""
     df = get_data()
     if df.empty:
         return {
             "page": page,
             "total_pages": 0,
             "total_items": 0,
-            "transactions": []}
+            "transactions": []
+        }
 
     filtered = df
     if type:
@@ -53,6 +107,7 @@ def get_transactions(
         filtered = filtered[filtered["amount"].abs() <= max_amount]
 
     total_items = len(filtered)
+    # math.ceil nécessite 'import math'
     total_pages = math.ceil(total_items / limit)
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
@@ -72,6 +127,7 @@ def get_transactions(
 
 
 def get_transaction_types():
+    """Liste les types de transactions uniques."""
     df = get_data()
     if df.empty or "use_chip" not in df.columns:
         return []
@@ -79,6 +135,7 @@ def get_transaction_types():
 
 
 def get_recent_transactions(n: int):
+    """Récupère les N dernières transactions."""
     df = get_data()
     if df.empty:
         return []
@@ -87,6 +144,7 @@ def get_recent_transactions(n: int):
 
 
 def get_transactions_by_customer(customer_id: int):
+    """Filtre par client (limité à 50)."""
     df = get_data()
     customer_df = df[df["client_id"] == customer_id]
     return [
@@ -96,24 +154,10 @@ def get_transactions_by_customer(customer_id: int):
 
 
 def get_transactions_to_merchant(merchant_id: int):
+    """Filtre par marchand (limité à 50)."""
     df = get_data()
     merchant_df = df[df["merchant_id"] == merchant_id]
     return [
         map_row_to_transaction(row)
         for _, row in merchant_df.head(50).iterrows()
-        ]
-
-
-def get_transaction_by_id(search_id: int):
-    df = get_data()
-    if df.empty:
-        return None
-
-    if "id" not in df.columns:
-        return None
-
-    row = df[df["id"] == search_id]
-    if row.empty:
-        return None
-
-    return map_row_to_transaction(row.iloc[0])
+    ]

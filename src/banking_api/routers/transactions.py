@@ -118,4 +118,4 @@ def get_transaction_by_id(id: str = Path(..., title="Transaction ID")):
         return result
 
     except ValueError:
-        raise HTTPException(status_code=400, detail="ID invalide")
+        raise HTTPException(status_code=400, detail="ID invalide") from None

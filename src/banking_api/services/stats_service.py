@@ -105,12 +105,13 @@ def get_daily_stats():
     Route 12: Tendance annuelle.
     """
     df = get_data()
-    if df.empty or "date" not in df.columns:
+
+    if df.empty or "date" not in df.columns or "amount" not in df.columns:
         return []
 
     try:
         work_df = df.copy()
-        # Extraction de l'année
+
         work_df["year"] = (
             work_df["date"]
             .astype(str)

@@ -72,8 +72,6 @@ def test_route_7_transactions_by_customer():
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
-import pytest # Assure-toi d'avoir import pytest tout en haut du fichier
-
 def test_route_route_8_transactions_to_merchant():
     """Route 8: Par Marchand"""
     tx_list = client.get("/api/transactions?limit=1").json()["transactions"]
