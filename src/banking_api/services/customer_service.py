@@ -1,119 +1,102 @@
-import math
+from typing import Dict, Any
+
 from src.banking_api.services.data_loader import get_data
 
 
-def get_all_customers(page=1, limit=10):
-    """
-    Route 16: Liste des clients uniques (paginée).
-    """
+def get_all_customers(page: int = 1, limit: int = 10) -> Dict[str, Any]:
+    """Route 16: Liste des clients uniques (paginée)."""
+    # Sécurité : On force des valeurs positives
     page = max(1, page)
     limit = max(1, min(limit, 100))
-    
+
     df = get_data()
-    if df.empty:
+
+    if df.empty or "client_id" not in df.columns:
         return {
             "page": page,
             "total_items": 0,
-            "total_pages": 0,
             "customers": []
         }
 
-    # On récupère la liste des IDs clients uniques
-    unique_clients = df["client_id"].unique()
+    # On récupère la liste unique des clients
+    unique_clients = df["client_id"].dropna().unique()
     total_items = len(unique_clients)
 
-    # Pagination manuelle
-    total_pages = math.ceil(total_items / limit)
+    # Pagination manuelle sur la liste
     start = (page - 1) * limit
     end = start + limit
-
     page_clients = unique_clients[start:end]
 
-    # Formatage avec compréhension de liste verticale
-    results = [
-        {"id": str(cid), "name": f"Client_{cid}"}
-        for cid in page_clients
-    ]
+    customers_list = []
+    for cid in page_clients:
+        # On essaie de trouver le nom s'il existe
+        client_rows = df[df["client_id"] == cid]
+        if not client_rows.empty and "nameOrig" in df.columns:
+            cname = client_rows.iloc[0]["nameOrig"]
+        else:
+            cname = f"Client_{cid}"
+
+        customers_list.append({
+            "id": int(cid),
+            "name": str(cname)
+        })
 
     return {
         "page": page,
-        "total_pages": total_pages,
         "total_items": total_items,
-        "customers": results,
+        "customers": customers_list
     }
 
 
-def get_customer_profile(customer_id: str):
-    """
-    Route 17: Profil détaillé d'un client.
-    """
+def get_customer_profile(customer_id: int):
+    """Route 17: Profil complet d'un client."""
     df = get_data()
-    if df.empty or "client_id" not in df.columns or "amount" not in df.columns:
+
+    if df.empty or "client_id" not in df.columns:
         return None
-    try:
-        cid = int(customer_id)
-        # On filtre toutes les transactions de ce client
-        client_tx = df[df["client_id"] == cid]
 
-        if client_tx.empty:
-            return None
+    # Conversion en string pour comparaison
+    customer_df = df[df["client_id"].astype(str) == str(customer_id)]
 
-        total_tx = len(client_tx)
-        avg_amt = client_tx["amount"].abs().mean()
+    if customer_df.empty:
+        return None
 
-        # Détection de fraude potentielle
-        has_fraud = False
-        if "errors" in df.columns:
-            fraud_rows = client_tx[
-                (client_tx["errors"] != 0)
-                & (client_tx["errors"] != "0")
-                & (client_tx["errors"].notna())
-            ]
-            has_fraud = not fraud_rows.empty
+    # Infos de base (on prend la première ligne trouvée)
+    first_row = customer_df.iloc[0]
+    name = first_row.get("nameOrig", f"Client_{customer_id}")
 
-        first_seen = "N/A"
-        last_seen = "N/A"
-        if "date" in df.columns:
-            first_seen = str(client_tx["date"].min())
-            last_seen = str(client_tx["date"].max())
+    # Stats calculées
+    total_spent = customer_df[customer_df["amount"] < 0]["amount"].sum()
+    total_received = customer_df[customer_df["amount"] > 0]["amount"].sum()
+    balance = customer_df["amount"].sum()
 
-        return {
-            "id": str(cid),
-            "transactions_count": int(total_tx),
-            "avg_amount": float(round(avg_amt, 2)),
-            "fraudulent": has_fraud,
-            "first_seen": first_seen,
-            "last_seen": last_seen,
+    return {
+        "id": customer_id,
+        "name": name,
+        "stats": {
+            "transaction_count": len(customer_df),
+            "total_spent": abs(round(total_spent, 2)),
+            "total_received": round(total_received, 2),
+            "current_balance": round(balance, 2)
         }
-    except ValueError:
-        return None
+    }
 
 
-def get_top_customers(n=10):
-    """
-    Route 18: Top clients par volume d'argent dépensé.
-    """
+def get_top_customers(n: int = 5):
+    """Route 18: Top N clients par volume de transactions."""
     df = get_data()
-    if df.empty:
+
+    if df.empty or "client_id" not in df.columns:
         return []
 
-    # On copie pour éviter les warnings pandas
-    wdf = df[["client_id", "amount"]].copy()
-    wdf["amount"] = wdf["amount"].abs()
-
-    # GroupBy chaîné et découpé proprement avec parenthèses
-    top = (
-        wdf.groupby("client_id")["amount"]
-        .sum()
-        .sort_values(ascending=False)
-        .head(n)
-    )
+    # On compte les occurrences de chaque client_id
+    top_series = df["client_id"].value_counts().head(n)
 
     results = []
-    for client_id, total_amount in top.items():
+    for cid, count in top_series.items():
         results.append({
-            "id": str(client_id),
-            "total_spent": float(round(total_amount, 2))
+            "id": int(cid),
+            "transaction_count": int(count)
         })
 
     return results

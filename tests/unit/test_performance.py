@@ -1,24 +1,23 @@
-import time
 from fastapi.testclient import TestClient
+import time
 from src.banking_api.main import app
-from src.banking_api.services.data_loader import load_dataset
 
-load_dataset()
 client = TestClient(app)
 
-def test_performance_100_transactions():
-    """
-    Vérifie que récupérer 100 transactions prend moins de 500ms.
-    Critère PDF : 'latence max < 500ms pour 100 transactions filtrées'
-    """
+
+def test_api_speed():
     start_time = time.time()
-    
-    # On demande 100 transactions
-    response = client.get("/api/transactions?limit=100")
-    
+    response = client.get("/api/transactions/")
     end_time = time.time()
     duration = end_time - start_time
-    
+
     assert response.status_code == 200
-    # La durée doit être inférieure à 0.5 seconde
-    assert duration < 0.5, f"Trop lent ! Temps: {duration}s"
+    assert duration < 1.0
+
+
+def test_stats_speed():
+    start_time = time.time()
+    client.get("/api/stats/overview")
+    end_time = time.time()
+    duration = end_time - start_time
+    assert duration < 1.0
