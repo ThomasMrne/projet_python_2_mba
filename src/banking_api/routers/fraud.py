@@ -23,7 +23,7 @@ class PredictionInput(BaseModel):
     type: str
     amount: float
     oldbalanceOrg: float = (
-        0  # Pas utilisé dans notre logique simplifiée mais demandé par le PDF
+        0
     )
     newbalanceOrig: float = 0
 

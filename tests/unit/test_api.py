@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from src.banking_api.main import app
 from src.banking_api.services.data_loader import load_dataset
 
-# On force le chargement des données
 load_dataset()
 
 client = TestClient(app)
@@ -83,7 +82,6 @@ def test_route_route_8_transactions_to_merchant():
 
     if len(parts) > 1 and parts[-1].isdigit():
         merch_id = parts[-1]
-        # CORRECTION : route /to-merchant/
         response = client.get(f"/api/transactions/to-merchant/{merch_id}")
         assert response.status_code == 200
     else:

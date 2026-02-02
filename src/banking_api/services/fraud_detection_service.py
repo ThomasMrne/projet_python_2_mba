@@ -14,8 +14,6 @@ def get_fraud_summary():
     total_frauds = 0
 
     if "errors" in df.columns:
-        # Création d'un masque propre pour éviter les lignes trop longues
-        # et les problèmes d'indentation (E122/E501)
         mask = (
             (df["errors"] != 0)
             & (df["errors"] != "0")
@@ -24,7 +22,6 @@ def get_fraud_summary():
         fraud_df = df[mask]
         total_frauds = len(fraud_df)
 
-    # Calcul du taux avec gestion de la division par zéro
     fraud_rate = 0.0
     if len(df) > 0:
         fraud_rate = total_frauds / len(df)
@@ -41,11 +38,9 @@ def get_fraud_by_type():
     df = get_data()
     required_cols = ["errors", "use_chip"]
 
-    # Vérification de sécurité
     if df.empty or any(col not in df.columns for col in required_cols):
         return []
 
-    # Même technique du masque pour filtrer proprement
     mask = (
         (df["errors"] != 0)
         & (df["errors"] != "0")
@@ -56,7 +51,6 @@ def get_fraud_by_type():
     if frauds.empty:
         return []
 
-    # Groupby aligné verticalement pour la lisibilité
     stats = (
         frauds.groupby("use_chip")
         .size()
@@ -72,17 +66,14 @@ def predict_fraud(amount: float, type: str):
     Route 15: Simulation de scoring (Prédiction).
     Règle arbitraire simple pour l'exercice.
     """
-    probability = 0.1  # Risque de base
+    probability = 0.1
 
-    # Règle 1 : Gros montant
     if amount > 1000:
         probability += 0.5
 
-    # Règle 2 : Transaction en ligne (souvent plus risquée)
     if "Online" in type:
         probability += 0.3
 
-    # Plafond à 1.0 (100%)
     probability = min(probability, 0.99)
 
     is_fraud = probability > 0.7

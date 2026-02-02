@@ -1,7 +1,6 @@
 import pandas as pd
 from pathlib import Path
 
-# Variable globale
 global_dataframe = None
 
 
@@ -10,7 +9,6 @@ def clean_currency_col(df, col):
     if col not in df.columns or df[col].dtype != "object":
         return
 
-    # On nettoie en plusieurs étapes courtes
     series = df[col].astype(str)
     series = series.str.replace("$", "", regex=False)
     series = series.str.replace(",", "", regex=False)

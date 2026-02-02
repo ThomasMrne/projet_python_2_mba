@@ -7,7 +7,7 @@ from src.banking_api.routers import transactions
 from src.banking_api.routers import stats
 from src.banking_api.routers import customers
 from src.banking_api.routers import fraud
-from src.banking_api.routers import system  # <--- Le petit nouveau
+from src.banking_api.routers import system
 
 
 @asynccontextmanager
@@ -25,7 +25,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Branchement complet
+# Branchement
 app.include_router(transactions.router)
 app.include_router(stats.router)
 app.include_router(customers.router)
