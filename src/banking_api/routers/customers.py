@@ -6,7 +6,7 @@ from src.banking_api.services import customer_service
 
 router = APIRouter(prefix="/api/customers", tags=["Customers"])
 
-# --- Modèles Pydantic Intégrés ---
+# --- Modèles Pydantic ---
 
 
 class Customer(BaseModel):
@@ -51,13 +51,12 @@ def list_customers(
 
 
 @router.get("/top", response_model=List[CustomerTop])
-def get_top_customers(n: int = 5):
+def get_top_customers(n: int = Query(5, ge=1, le=100)):
     return customer_service.get_top_customers(n)
 
 
 @router.get("/{customer_id}", response_model=CustomerProfile)
 def get_customer_details(customer_id: int):
-
     profile = customer_service.get_customer_profile(customer_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Customer not found")

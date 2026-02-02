@@ -21,13 +21,16 @@ def get_global_stats():
 
     top_tx = None
     if "amount" in df.columns:
-        max_idx = df["amount"].abs().idxmax()
-        row = df.loc[max_idx]
-        top_tx = {
-            "id": str(row.get("id", "Unknown")),
-            "amount": float(abs(row.get("amount", 0.0))),
-            "date": str(row.get("date", ""))
-        }
+        amounts = df["amount"].dropna()
+
+        if not amounts.empty:
+            max_idx = amounts.abs().idxmax()
+            row = df.loc[max_idx]
+            top_tx = {
+                "id": str(row.get("id", "Unknown")),
+                "amount": float(abs(row.get("amount", 0.0))),
+                "date": str(row.get("date", ""))
+            }
 
     return {
         "total_transactions": total_tx,
@@ -78,5 +81,5 @@ def get_daily_transaction_volume():
             {"date": str(d), "count": int(c)}
             for d, c in daily_counts.items()
         ]
-    except Exception:
+    except (KeyError, ValueError, TypeError):
         return []

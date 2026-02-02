@@ -7,7 +7,6 @@ from src.banking_api.services import transactions_service
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
 
-# --- Modèles Pydantic ---
 class Transaction(BaseModel):
     id: Union[str, int]
     date: str
@@ -39,8 +38,6 @@ class SearchCriteria(BaseModel):
     min_amount: Optional[float] = None
     max_amount: Optional[float] = None
 
-
-# --- Routes ---
 
 @router.get("", response_model=PaginatedTransactionResponse)
 def get_transactions(
@@ -85,11 +82,7 @@ def search_transactions_post(
     limit: int = Query(10),
 ):
     return transactions_service.get_transactions(
-        page,
-        limit,
-        criteria.type,
-        criteria.min_amount,
-        criteria.max_amount
+        page, limit, criteria.type, criteria.min_amount, criteria.max_amount
     )
 
 
@@ -105,14 +98,11 @@ def read_transactions_to_merchant(merchant_id: int):
 
 @router.delete("/{id}")
 def delete_transaction(id: str):
-    return {
-        "message": f"Transaction {id} supprimée avec succès (Simulation)"
-    }
+    return {"message": f"Transaction {id} supprimée avec succès (Simulation)"}
 
 
 @router.get("/{id}", response_model=Transaction)
 def get_transaction_by_id(id: str = Path(..., title="Transaction ID")):
-    # Si l'ID n'est pas numérique, on renvoie 404 directement
     if not id.isdigit():
         raise HTTPException(
             status_code=404,

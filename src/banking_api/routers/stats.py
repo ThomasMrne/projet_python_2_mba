@@ -6,8 +6,6 @@ from src.banking_api.services import stats_service
 
 router = APIRouter(prefix="/api/stats", tags=["Stats"])
 
-# --- Modèles Pydantic ---
-
 
 class TopTransaction(BaseModel):
     id: Union[str, int, None] = None
@@ -36,8 +34,6 @@ class TypeStat(BaseModel):
 class StepStat(BaseModel):
     date: str
     count: int
-
-# --- Routes ---
 
 
 @router.get("/overview", response_model=GlobalStats)
