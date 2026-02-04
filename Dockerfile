@@ -1,22 +1,35 @@
-# On part d'une image Python officielle légère
-FROM python:3.13-slim
+# --- ÉTAPE 1 : Build ---
+# On utilise l'image alpine qui est ultra légère et contient un shell
+FROM ghcr.io/astral-sh/uv:python3.13-alpine AS builder
 
-# Définition du dossier de travail dans le conteneur
+# Optimisations uv
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+
 WORKDIR /app
 
-# Copie des fichiers de configuration indispensables
-COPY pyproject.toml README.md requirements.txt ./
+# Copie des fichiers de dépendances
+COPY pyproject.toml uv.lock ./
 
-# Copie du code source
-COPY src ./src
+# Installation des dépendances dans un venv local à /app/.venv
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project --no-dev
 
-# On installe le projet et les dépendances
-# L'option --no-cache-dir permet de garder l'image légère
-RUN pip install --no-cache-dir -e .
+# --- ÉTAPE 2 : Runtime ---
+FROM python:3.13-slim
 
-# On expose le port 8000 (celui de l'API)
+WORKDIR /app
+
+# Récupération du venv du builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Activation du venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copie du code et des données
+COPY src/ ./src/
+COPY data/ ./data/
+
 EXPOSE 8000
 
-# La commande de démarrage automatique
-# --host 0.0.0.0 est OBLIGATOIRE pour que Docker soit accessible de l'extérieur
+# Lancement
 CMD ["uvicorn", "src.banking_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,33 +1,51 @@
-# Données
-data/transactions.csv
+# --- Données ---
+data/*.csv
+# Maintien du dossier data mais ignore les fichiers CSV
+!data/.gitkeep 
 
-# Python
+# --- Python & Bytecode ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
 
-# Environnement virtuel
+# --- Environnements Virtuels ---
 .venv/
 venv/
 ENV/
+env/
 
-# Distribution / Packaging
+# --- Outils de qualité ---
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- Distribution / Packaging ---
+# Suppression des binaires
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+node_modules/
 *.egg-info/
-.installed.cfg
 *.egg
+*.whl
 
-# Autres
+# --- Configuration UV ---
+# maintien de pyproject.toml et uv.lock, mais ignore le cache
+.uv/
+
+# --- IDE & Système ---
 .DS_Store
-.vscode/*.egg-info/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Docker ---
+.docker/
