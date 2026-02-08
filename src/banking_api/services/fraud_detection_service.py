@@ -2,84 +2,50 @@ from src.banking_api.services.data_loader import get_data
 
 
 def get_fraud_summary():
-    """Route 13: Vue d'ensemble de la fraude (Basé sur les erreurs)"""
     df = get_data()
     if df.empty:
-        return {
-            "total_frauds": 0,
-            "flagged_by_system": 0,
-            "fraud_rate": 0.0
-        }
+        return {"total_frauds": 0, "flagged_by_system": 0, "fraud_rate": 0.0}
 
-    total_frauds = 0
-
-    if "errors" in df.columns:
-        mask = (
-            (df["errors"] != 0)
-            & (df["errors"] != "0")
-            & (df["errors"].notna())
-        )
-        fraud_df = df[mask]
-        total_frauds = len(fraud_df)
-
-    fraud_rate = 0.0
-    if len(df) > 0:
-        fraud_rate = total_frauds / len(df)
+    col = "isFraud" if "isFraud" in df.columns else "errors"
+    # Filtrage robuste (gère string, int, float)
+    frauds = df[df[col].astype(str).isin(["1", "1.0", "True"])]
+    total = len(frauds)
+    rate = total / len(df) if len(df) > 0 else 0.0
 
     return {
-        "total_frauds": total_frauds,
-        "flagged_by_system": total_frauds,
-        "fraud_rate": float(round(fraud_rate, 5)),
+        "total_frauds": total,
+        "flagged_by_system": total,
+        "fraud_rate": float(round(rate, 5))
     }
 
 
 def get_fraud_by_type():
-    """Route 14: Répartition de la fraude par type de transaction"""
     df = get_data()
-    required_cols = ["errors", "use_chip"]
+    f_col = "isFraud" if "isFraud" in df.columns else "errors"
+    t_col = "type" if "type" in df.columns else "use_chip"
 
-    if df.empty or any(col not in df.columns for col in required_cols):
+    if df.empty or f_col not in df.columns:
         return []
 
-    mask = (
-        (df["errors"] != 0)
-        & (df["errors"] != "0")
-        & (df["errors"].notna())
-    )
-    frauds = df[mask]
-
+    frauds = df[df[f_col].astype(str).isin(["1", "1.0", "True"])]
     if frauds.empty:
         return []
 
-    stats = (
-        frauds.groupby("use_chip")
-        .size()
-        .reset_index(name="count")
-    )
-    stats = stats.rename(columns={"use_chip": "type"})
-
-    return stats.to_dict(orient="records")
+    stats = frauds.groupby(t_col).size().reset_index(name="count")
+    return stats.rename(columns={t_col: "type"}).to_dict(orient="records")
 
 
-def predict_fraud(amount: float, type: str):
-    """
-    Route 15: Simulation de scoring (Prédiction).
-    Règle arbitraire simple pour l'exercice.
-    """
-    probability = 0.1
-
+def predict_fraud(amount: float, tx_type: str):
+    prob = 0.1
     if amount > 1000:
-        probability += 0.5
+        prob += 0.5
+    if any(x in tx_type.upper() for x in ["TRANSFER", "CASH_OUT"]):
+        prob += 0.3
 
-    if "Online" in type:
-        probability += 0.3
-
-    probability = min(probability, 0.99)
-
-    is_fraud = probability > 0.7
-
+    prob = min(prob, 0.99)
+    is_f = prob > 0.7
     return {
-        "isFraud": is_fraud,
-        "probability": float(round(probability, 2)),
-        "risk_level": "High" if is_fraud else "Low",
+        "isFraud": is_f,
+        "probability": float(round(prob, 2)),
+        "risk_level": "High" if is_f else "Low"
     }

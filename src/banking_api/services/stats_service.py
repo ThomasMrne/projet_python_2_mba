@@ -2,84 +2,62 @@ from src.banking_api.services.data_loader import get_data
 
 
 def get_global_stats():
+    """Route 10: Résumé global des transactions"""
     df = get_data()
-
     if df.empty:
         return {
             "total_transactions": 0,
             "average_amount": 0.0,
             "top_transaction": None,
             "fraud_rate": 0.0,
-            "most_common_type": None
+            "most_common_type": "N/A"
         }
 
-    total_tx = len(df)
-
-    avg_amount = 0.0
-    if "amount" in df.columns:
-        avg_amount = df["amount"].abs().mean()
+    # Pas besoin de 'pd.' ici, les méthodes appartiennent au DataFrame 'df'
+    avg = df["amount"].mean() if "amount" in df.columns else 0.0
 
     top_tx = None
-    if "amount" in df.columns:
-        amounts = df["amount"].dropna()
+    if "amount" in df.columns and not df.empty:
+        idx = df["amount"].idxmax()
+        row = df.loc[idx]
+        top_tx = {
+            "id": str(idx),
+            "amount": float(row["amount"]),
+            "date": "N/A"
+        }
 
-        if not amounts.empty:
-            max_idx = amounts.abs().idxmax()
-            row = df.loc[max_idx]
-            top_tx = {
-                "id": str(row.get("id", "Unknown")),
-                "amount": float(abs(row.get("amount", 0.0))),
-                "date": str(row.get("date", ""))
-            }
+    # Calcul du type le plus fréquent
+    common_type = "N/A"
+    if "type" in df.columns:
+        mode_res = df["type"].mode()
+        if not mode_res.empty:
+            common_type = str(mode_res[0])
 
     return {
-        "total_transactions": total_tx,
-        "average_amount": round(avg_amount, 2),
+        "total_transactions": len(df),
+        "average_amount": round(float(avg), 2),
         "top_transaction": top_tx,
         "fraud_rate": 0.0,
-        "most_common_type": "Payment"
-    }
-
-
-def get_amount_distribution():
-    return {
-        "bins": ["0-50", "50-100", "100+"],
-        "counts": [10, 5, 2]
+        "most_common_type": common_type
     }
 
 
 def get_transactions_by_type():
-    """Compte les transactions par type."""
+    """Route 11: Répartition par type"""
     df = get_data()
-    if df.empty:
+    col = "type" if "type" in df.columns else None
+    if df.empty or not col:
         return []
 
-    if "type" in df.columns:
-        counts = df["type"].value_counts()
-    elif "use_chip" in df.columns:
-        counts = df["use_chip"].value_counts()
-    else:
-        return []
-
-    return [
-        {"type": str(t), "count": int(c)}
-        for t, c in counts.items()
-    ]
+    counts = df[col].value_counts()
+    return [{"type": str(t), "count": int(c)} for t, c in counts.items()]
 
 
 def get_daily_transaction_volume():
-    """Volume quotidien des transactions."""
+    """Route 12: Volume par step"""
     df = get_data()
-    if df.empty or "date" not in df.columns:
+    if df.empty or "step" not in df.columns:
         return []
 
-    try:
-        dates_series = df["date"].astype(str).str[:10]
-        daily_counts = dates_series.value_counts().sort_index()
-
-        return [
-            {"date": str(d), "count": int(c)}
-            for d, c in daily_counts.items()
-        ]
-    except (KeyError, ValueError, TypeError):
-        return []
+    daily = df["step"].value_counts().sort_index().head(10)
+    return [{"date": f"Step {s}", "count": int(c)} for s, c in daily.items()]
