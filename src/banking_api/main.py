@@ -12,8 +12,14 @@ from src.banking_api.routers import system
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Gère le cycle de vie de l'application avec vérification des données."""
     print("Démarrage de l'API...")
-    load_dataset()
+
+    if not load_dataset():
+        print("AVERTISSEMENT: Échec du chargement des données.")
+    else:
+        print("Données chargées avec succès.")
+
     yield
     print("Arrêt de l'API.")
 

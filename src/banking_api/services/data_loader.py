@@ -5,61 +5,41 @@ global_dataframe = None
 
 
 def clean_currency_col(df, col):
-    """Fonction aide pour nettoyer une colonne monétaire."""
+    """Nettoie une colonne monétaire."""
     if col not in df.columns or df[col].dtype != "object":
         return
-
-    series = df[col].astype(str)
-    series = series.str.replace("$", "", regex=False)
-    series = series.str.replace(",", "", regex=False)
-    df[col] = pd.to_numeric(series, errors="coerce")
+    s = df[col].astype(str).str.replace("$", "", regex=False)
+    s = s.str.replace(",", "", regex=False)
+    df[col] = pd.to_numeric(s, errors="coerce")
 
 
 def load_dataset():
-    """
-    Charge le fichier CSV et nettoie les symboles monétaires.
-    """
+    """Charge le dataset via recherche multi-chemins."""
     global global_dataframe
-
-    base_path = Path(__file__).resolve().parents[3]
-    csv_path = base_path / "data" / "transactions.csv"
-
-    print(f"Chargement : {csv_path}")
-
-    if not csv_path.exists():
-        print("ERREUR : csv introuvable !")
+    paths = [
+        Path(__file__).resolve().parents[3] / "data" / "transactions.csv",
+        Path.cwd() / "data" / "transactions.csv",
+        Path.cwd() / "src" / "banking_api" / "data" / "transactions.csv"
+    ]
+    t_path = next((p for p in paths if p.exists()), None)
+    if not t_path:
         return False
-
     try:
-        # 1. Chargement
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(t_path)
         df.columns = df.columns.str.strip()
-
-        # 2. Nettoyage
-        target_cols = [
-            "amount",
-            "oldbalanceOrg",
-            "newbalanceOrig",
-            "oldbalanceDest",
-            "newbalanceDest",
+        cols = [
+            "amount", "oldbalanceOrg", "newbalanceOrig",
+            "oldbalanceDest", "newbalanceDest"
         ]
-
-        for col in target_cols:
+        for col in cols:
             clean_currency_col(df, col)
-
         df.fillna(0, inplace=True)
         global_dataframe = df
-
-        count = len(df)
-        print(f"Succès ! {count} transactions chargées.")
         return True
-
-    except Exception as e:
-        print(f"Erreur lecture CSV : {e}")
+    except Exception:
         return False
 
 
 def get_data() -> pd.DataFrame:
-    if global_dataframe is None:
-        return pd.DataFrame()
-    return global_dataframe
+    """Renvoie le dataframe chargé."""
+    return global_dataframe if global_dataframe is not None else pd.DataFrame()

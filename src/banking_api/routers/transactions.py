@@ -45,8 +45,8 @@ class SearchCriteria(BaseModel):
 
 @router.get("", response_model=PaginatedTransactionResponse)
 def get_transactions(
-    page: int = Query(1),
-    limit: int = Query(10),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     type: Optional[str] = None,
     min_amount: Optional[float] = None,
     max_amount: Optional[float] = None,
@@ -62,14 +62,16 @@ def get_transaction_types():
 
 
 @router.get("/recent", response_model=List[Transaction])
-def get_recent_transactions(n: int = Query(10)):
+def get_recent_transactions(
+    n: int = Query(10, ge=1, le=50)
+):
     return transactions_service.get_recent_transactions(n)
 
 
 @router.get("/search", response_model=PaginatedTransactionResponse)
 def search_transactions_get(
-    page: int = Query(1),
-    limit: int = Query(10),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     type: Optional[str] = None,
     min_amount: Optional[float] = None,
     max_amount: Optional[float] = None,
@@ -82,8 +84,8 @@ def search_transactions_get(
 @router.post("/search", response_model=PaginatedTransactionResponse)
 def search_transactions_post(
     criteria: SearchCriteria,
-    page: int = Query(1),
-    limit: int = Query(10),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
 ):
     return transactions_service.get_transactions(
         page,
@@ -95,49 +97,44 @@ def search_transactions_post(
 
 
 @router.get("/by-customer/{customer_id}", response_model=List[Transaction])
-def get_transactions_by_customer(customer_id: int):
+def get_transactions_by_customer(
+    customer_id: int = Path(..., ge=0)
+):
     return transactions_service.get_transactions_by_customer(customer_id)
 
 
 @router.get("/to-merchant/{merchant_id}", response_model=List[Transaction])
-def read_transactions_to_merchant(merchant_id: int):
+def read_transactions_to_merchant(
+    merchant_id: int = Path(..., ge=0)
+):
     return transactions_service.get_transactions_to_merchant(merchant_id)
 
 
 @router.delete("/{id}")
-def delete_transaction(id: str):
-    if id.isdigit():
-        result = transactions_service.get_transaction_by_id(int(id))
-        if not result:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Transaction with id {id} not found"
-            )
-    else:
+def delete_transaction(
+    id: int = Path(..., title="Transaction ID", ge=0)
+):
+    """Supprime une transaction après vérification d'existence."""
+    result = transactions_service.get_transaction_by_id(id)
+    if not result:
         raise HTTPException(
             status_code=404,
             detail=f"Transaction with id {id} not found"
         )
 
-    return {
-        "message": f"Transaction {id} supprimée avec succès (Simulation)"
-    }
+    return {"message": f"Transaction {id} supprimée avec succès"}
 
 
 @router.get("/{id}", response_model=Transaction)
-def get_transaction_by_id(id: str = Path(..., title="Transaction ID")):
-    if not id.isdigit():
-        raise HTTPException(
-            status_code=404,
-            detail=f"Transaction with id {id} not found"
-        )
-
-    search_id = int(id)
-    result = transactions_service.get_transaction_by_id(search_id)
+def get_transaction_by_id(
+    id: int = Path(..., title="Transaction ID", ge=0)
+):
+    """Récupère une transaction. Le type int gère la validation auto."""
+    result = transactions_service.get_transaction_by_id(id)
 
     if not result:
         raise HTTPException(
             status_code=404,
-            detail=f"Transaction with id {search_id} not found"
+            detail=f"Transaction with id {id} not found"
         )
     return result

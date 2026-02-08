@@ -11,4 +11,4 @@ def test_invalid_page_param():
 
 def test_negative_limit():
     response = client.get("/api/transactions/search?limit=-5")
-    assert response.status_code == 200
+    assert response.status_code == 422
