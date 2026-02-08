@@ -36,7 +36,8 @@ def load_dataset():
         df.fillna(0, inplace=True)
         global_dataframe = df
         return True
-    except Exception:
+    except Exception as e:
+        print(f"Erreur lors du chargement du dataset: {e}")
         return False
 
 
