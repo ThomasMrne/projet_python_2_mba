@@ -127,8 +127,9 @@ def test_fraud_routes_coverage():
     assert response.status_code == 200
     assert response.json()["risk_level"] == "High"
 
-    def test_stats_full_exploration():
-        """Force l'exécution des calculs complexes du stats_service."""
+
+def test_stats_full_exploration():
+    """Force l'exécution des calculs complexes du stats_service."""
     endpoints = [
         "/api/stats/overview",
         "/api/stats/daily",
@@ -137,8 +138,6 @@ def test_fraud_routes_coverage():
     ]
     for route in endpoints:
         response = client.get(route)
-        # Même si la route renvoie 404 (si le nom n'est pas exact),
-        # on veut juste que Pytest tente l'exécution.
         if response.status_code == 200:
             assert response.json() is not None
 
@@ -146,20 +145,26 @@ def test_fraud_routes_coverage():
 def test_final_coverage_push():
     """Exploration des cas limites pour maximiser le coverage."""
     # 1. Stats : Forcer des filtres temporels ou de types
-    client.get("/api/stats/overview?period=year")
-    client.get("/api/stats/daily?limit=100")
+    assert client.get("/api/stats/overview?period=year").status_code == 200
+    assert client.get("/api/stats/daily?limit=100").status_code == 200
 
     # 2. Transactions : Forcer des recherches complexes (Service Transactions)
-    # Chercher un montant énorme, un montant nul, et un type inexistant
-    client.post("/api/transactions/search", json={"min_amount": 99999999})
-    client.post("/api/transactions/search",
-                json={"transaction_type": "UNKNOWN"})
+    client.post(
+        "/api/transactions/search",
+        json={"min_amount": 99999999}
+    )
+    client.post(
+        "/api/transactions/search",
+        json={"transaction_type": "UNKNOWN"}
+    )
 
     # 3. Détail d'une transaction inexistante
-    client.get("/api/transactions/999999999")
+    resp = client.get("/api/transactions/999999999")
+    assert resp.status_code in (200, 404)
 
     # 4. Suppression d'une transaction inexistante
-    client.delete("/api/transactions/999999999")
+    resp = client.delete("/api/transactions/999999999")
+    assert resp.status_code in (200, 404)
 
 
 def test_stats_final_coverage():

@@ -7,6 +7,11 @@ def get_fraud_summary():
         return {"total_frauds": 0, "flagged_by_system": 0, "fraud_rate": 0.0}
 
     col = "isFraud" if "isFraud" in df.columns else "errors"
+    if col not in df.columns:
+        return {"total_frauds": 0, "flagged_by_system": 0, "fraud_rate": 0.0}
+
+    # Filtrage robuste (gère string, int, float)
+    frauds = df[df[col].astype(str).isin(["1", "1.0", "True"])]
     # Filtrage robuste (gère string, int, float)
     frauds = df[df[col].astype(str).isin(["1", "1.0", "True"])]
     total = len(frauds)

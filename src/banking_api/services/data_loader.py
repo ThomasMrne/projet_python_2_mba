@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from pathlib import Path
 
 global_dataframe = pd.DataFrame()
@@ -17,8 +18,12 @@ def clean_currency_col(df, col):
 def load_dataset():
     """Charge le dataset avec une tolérance totale aux types de données."""
     global global_dataframe
-    p = Path("/Users/thomasmarie-anne/Desktop/Bureau - MacBook Air de Thomas/"
-             "projet_python_2_mba/data/transactions.csv")
+
+    root = Path(__file__).resolve().parents[3]
+    default_path = root / "data" / "transactions.csv"
+
+    # On récupère le chemin via l'env ou le défaut
+    p = Path(os.environ.get("DATASET_PATH", default_path))
     try:
         # Cela accepte les '0' au milieu des noms sans planter.
         df = pd.read_csv(p, low_memory=False, dtype=object)

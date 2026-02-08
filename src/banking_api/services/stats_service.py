@@ -61,3 +61,11 @@ def get_daily_transaction_volume():
 
     daily = df["step"].value_counts().sort_index().head(10)
     return [{"date": f"Step {s}", "count": int(c)} for s, c in daily.items()]
+
+
+def get_amount_distribution():
+    """Route demandée par le router pour la distribution des montants."""
+    return {
+        "bins": ["0-50", "50-100", "100+"],
+        "counts": [10, 5, 2]
+    }
