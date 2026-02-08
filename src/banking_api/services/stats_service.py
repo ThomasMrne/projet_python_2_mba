@@ -1,8 +1,9 @@
+import pandas as pd
 from src.banking_api.services.data_loader import get_data
 
 
 def get_global_stats():
-    """Route 10: Résumé global des transactions"""
+    """Route 10: Résumé global des transactions avec calcul dynamique."""
     df = get_data()
     if df.empty:
         return {
@@ -13,8 +14,14 @@ def get_global_stats():
             "most_common_type": "N/A"
         }
 
-    # Pas besoin de 'pd.' ici, les méthodes appartiennent au DataFrame 'df'
+    # Calcul de la moyenne des montants
     avg = df["amount"].mean() if "amount" in df.columns else 0.0
+
+    # --- CALCUL DYNAMIQUE DU TAUX DE FRAUDE ---
+    fraud_rate = 0.0
+    if "isFraud" in df.columns and not df.empty:
+        total_frauds = df["isFraud"].astype(float).sum()
+        fraud_rate = round(float(total_frauds / len(df)), 5)
 
     top_tx = None
     if "amount" in df.columns and not df.empty:
@@ -37,7 +44,7 @@ def get_global_stats():
         "total_transactions": len(df),
         "average_amount": round(float(avg), 2),
         "top_transaction": top_tx,
-        "fraud_rate": 0.0,
+        "fraud_rate": fraud_rate,
         "most_common_type": common_type
     }
 
@@ -64,8 +71,34 @@ def get_daily_transaction_volume():
 
 
 def get_amount_distribution():
-    """Route demandée par le router pour la distribution des montants."""
+    """
+    Route 13: Calcule la répartition réelle des montants par tranches.
+    Utilise pd.cut pour segmenter les 13M de lignes efficacement.
+    """
+    df = get_data()
+    bins_labels = ["0-50", "50-100", "100+"]
+
+    if df.empty or "amount" not in df.columns:
+        return {
+            "bins": bins_labels,
+            "counts": [0, 0, 0]
+        }
+
+    # Définition des paliers : [0, 50[, [50, 100[, [100, inf[
+    bins_edges = [0, 50, 100, float('inf')]
+
+    # Segmentation des données
+    segments = pd.cut(
+        df["amount"],
+        bins=bins_edges,
+        labels=bins_labels,
+        right=False
+    )
+
+    # Comptage et réindexation pour garantir l'ordre des labels
+    counts = segments.value_counts().reindex(bins_labels, fill_value=0)
+
     return {
-        "bins": ["0-50", "50-100", "100+"],
-        "counts": [10, 5, 2]
+        "bins": bins_labels,
+        "counts": [int(c) for c in counts.values]
     }

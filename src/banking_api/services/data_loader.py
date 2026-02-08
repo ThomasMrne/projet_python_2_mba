@@ -25,11 +25,12 @@ def load_dataset():
     # On récupère le chemin via l'env ou le défaut
     p = Path(os.environ.get("DATASET_PATH", default_path))
     try:
-        # Cela accepte les '0' au milieu des noms sans planter.
+        # CAccepte les '0' au milieu des noms sans planter.
         df = pd.read_csv(p, low_memory=False, dtype=object)
 
         df.columns = df.columns.str.strip()
 
+        # 1. Nettoyage spécifique des colonnes numériques
         numeric_cols = [
             "amount", "oldbalanceOrg", "newbalanceOrig",
             "oldbalanceDest", "newbalanceDest"
@@ -37,12 +38,13 @@ def load_dataset():
         for col in numeric_cols:
             clean_currency_col(df, col)
 
-        # Conversion explicite des labels de fraude si présents
+        # 2. Conversion explicite des labels de fraude
         for col in ["isFraud", "isFlaggedFraud"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-        df.fillna(0, inplace=True)
+        df.fillna("", inplace=True)
+
         global_dataframe = df
         print(f"--- SUCCÈS : {len(df)} LIGNES CHARGÉES ---")
         return True

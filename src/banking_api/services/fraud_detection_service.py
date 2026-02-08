@@ -12,8 +12,6 @@ def get_fraud_summary():
 
     # Filtrage robuste (gère string, int, float)
     frauds = df[df[col].astype(str).isin(["1", "1.0", "True"])]
-    # Filtrage robuste (gère string, int, float)
-    frauds = df[df[col].astype(str).isin(["1", "1.0", "True"])]
     total = len(frauds)
     rate = total / len(df) if len(df) > 0 else 0.0
 
@@ -29,7 +27,7 @@ def get_fraud_by_type():
     f_col = "isFraud" if "isFraud" in df.columns else "errors"
     t_col = "type" if "type" in df.columns else "use_chip"
 
-    if df.empty or f_col not in df.columns:
+    if df.empty or f_col not in df.columns or t_col not in df.columns:
         return []
 
     frauds = df[df[f_col].astype(str).isin(["1", "1.0", "True"])]
