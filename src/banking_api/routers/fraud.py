@@ -57,5 +57,11 @@ def get_fraud_distribution():
 
 @router.post("/predict", response_model=PredictionResult)
 def predict_transaction_risk(data: PredictionInput):
-    """Route 15: Prédire si une transaction est risquée"""
-    return fraud_service.predict_fraud(data.amount, data.type)
+    """Route 15: Évalue en temps réel si une transaction est frauduleuse."""
+    # Transmission de tous les champs de l'input vers la logique métier
+    return fraud_service.predict_fraud(
+        amount=data.amount,
+        tx_type=data.type,
+        old_bal=data.oldbalanceOrg,
+        new_bal=data.newbalanceOrig
+    )

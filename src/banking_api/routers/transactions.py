@@ -122,18 +122,20 @@ def read_transactions_to_merchant(
 
 
 @router.delete("/{id}")
-def delete_transaction(
-    id: int = Path(..., title="Transaction ID", ge=0)
-):
-    """Supprime une transaction après vérification d'existence."""
+def delete_transaction(id: int = Path(..., title="Transaction ID", ge=0)):
+    """
+    Simulation de suppression (API en mode lecture seule).
+    Vérifie l'existence de l'ID avant de confirmer l'action.
+    """
     result = transactions_service.get_transaction_by_id(id)
     if not result:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Transaction with id {id} not found"
-        )
+        raise HTTPException(status_code=404, detail="Transaction not found")
 
-    return {"message": f"Transaction {id} supprimée avec succès"}
+    # On précise bien que c'est une simulation dans le message
+    return {
+        "message": f"Simulation: Transaction {id} marquée pour suppression",
+        "status": "read-only_mode"
+    }
 
 
 @router.get("/{id}", response_model=Transaction)

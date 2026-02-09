@@ -193,3 +193,10 @@ def get_transactions_to_merchant(merchant_id: int):
         map_row_to_transaction(row)
         for _, row in merchant_df.head(50).iterrows()
     ]
+
+
+def simulate_delete_transaction(transaction_id: int) -> bool:
+    """
+    Simule la suppression d'une transaction.
+    """
+    return True

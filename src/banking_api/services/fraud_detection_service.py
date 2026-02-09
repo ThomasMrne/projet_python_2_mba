@@ -42,19 +42,30 @@ def get_fraud_by_type():
     return stats.rename(columns={t_col: "type"}).to_dict(orient="records")
 
 
-def predict_fraud(amount: float, tx_type: str):
-    """Route 15: Algorithme de détection de risque basé sur des règles."""
+def predict_fraud(amount: float, tx_type: str, old_bal:
+                  float = 0, new_bal: float = 0):
+    """
+    Algorithme de détection de risque basé sur des règles.
+    Prend désormais en compte l'évolution du solde du compte.
+    """
     prob = 0.1
-    # Augmentation du risque si le montant dépasse un certain seuil
+
+    # Risque élevé pour les transactions dépassant 1000 unités
     if amount > 1000:
         prob += 0.5
-    # Les transferts et retraits d'espèces sont jugés plus risqués
+
+    # Les types TRANSFER et CASH_OUT sont statistiquement plus risqués
     if any(x in tx_type.upper() for x in ["TRANSFER", "CASH_OUT"]):
         prob += 0.3
 
-    # Plafonnement de la probabilité et détermination du niveau de risque
+    # LOGIQUE AJOUTÉE : Détection d'un vidage de compte (solde tombe à 0)
+    if old_bal > 0 and new_bal == 0 and amount > 0:
+        prob += 0.2
+
+    # Plafonnement de la probabilité à 99%
     prob = min(prob, 0.99)
     is_f = prob > 0.7
+
     return {
         "isFraud": is_f,
         "probability": float(round(prob, 2)),
