@@ -5,6 +5,7 @@ from src.banking_api.services.data_loader import get_data
 def get_global_stats():
     """Route 10: Résumé global des transactions avec calcul dynamique."""
     df = get_data()
+    # Gestion du cas où le dataset est vide au démarrage
     if df.empty:
         return {
             "total_transactions": 0,
@@ -23,6 +24,7 @@ def get_global_stats():
         total_frauds = df["isFraud"].astype(float).sum()
         fraud_rate = round(float(total_frauds / len(df)), 5)
 
+    # Identification de la transaction ayant le montant record
     top_tx = None
     if "amount" in df.columns and not df.empty:
         idx = df["amount"].idxmax()
@@ -33,7 +35,7 @@ def get_global_stats():
             "date": "N/A"
         }
 
-    # Calcul du type le plus fréquent
+    # Détermination de la catégorie de transaction la plus représentée
     common_type = "N/A"
     if "type" in df.columns:
         mode_res = df["type"].mode()
@@ -50,7 +52,7 @@ def get_global_stats():
 
 
 def get_transactions_by_type():
-    """Route 11: Répartition par type"""
+    """Route 11: Répartition par type de mouvement"""
     df = get_data()
     col = "type" if "type" in df.columns else None
     if df.empty or not col:
@@ -61,18 +63,19 @@ def get_transactions_by_type():
 
 
 def get_daily_transaction_volume():
-    """Route 12: Volume par step"""
+    """Route 12: Analyse du volume d'activité par unité de temps (Step)."""
     df = get_data()
     if df.empty or "step" not in df.columns:
         return []
 
+    # Analyse des 10 premières unités temporelles du dataset
     daily = df["step"].value_counts().sort_index().head(10)
     return [{"date": f"Step {s}", "count": int(c)} for s, c in daily.items()]
 
 
 def get_amount_distribution():
     """
-    Route 13: Calcule la répartition réelle des montants par tranches.
+    Route 13: Répartition des montants par tranches (Histogramme).
     Utilise pd.cut pour segmenter les 13M de lignes efficacement.
     """
     df = get_data()
@@ -84,10 +87,10 @@ def get_amount_distribution():
             "counts": [0, 0, 0]
         }
 
-    # Définition des paliers : [0, 50[, [50, 100[, [100, inf[
+# Définition des bornes des tranches monétaires (jusqu'à l'infini)
     bins_edges = [0, 50, 100, float('inf')]
 
-    # Segmentation des données
+    # Segmentation automatique des données dans les catégories définies
     segments = pd.cut(
         df["amount"],
         bins=bins_edges,
@@ -95,7 +98,7 @@ def get_amount_distribution():
         right=False
     )
 
-    # Comptage et réindexation pour garantir l'ordre des labels
+    # Comptage par tranche avec garantie de l'ordre d'affichage
     counts = segments.value_counts().reindex(bins_labels, fill_value=0)
 
     return {

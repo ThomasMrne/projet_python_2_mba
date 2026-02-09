@@ -117,7 +117,7 @@ def test_fraud_routes_coverage():
     assert client.get("/api/fraud/by-type").status_code == 200
 
     # POST pour la prédiction (Route 15)
-    # On envoie un JSON qui correspond à ton PredictionInput
+    # On envoie un JSON qui correspond à PredictionInput
     payload = {
         "amount": 5000.0,
         "type": "TRANSFER"

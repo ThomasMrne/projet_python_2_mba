@@ -6,7 +6,7 @@ from src.banking_api.services.data_loader import get_data
 
 
 def get_all_transactions(limit: int = 100) -> List[dict]:
-    """Récupère une liste simple de transactions (limitée)."""
+    """Récupère un échantillon limité de transactions pour l'affichage."""
     df = get_data()
     if df.empty:
         return []
@@ -24,6 +24,7 @@ def get_transaction_by_id(search_id: int):
     if "id" not in df.columns:
         return None
 
+    # Filtrage par ID converti en chaîne pour éviter les erreurs de type
     row = df[df["id"].astype(str) == str(search_id)]
 
     if row.empty:
@@ -33,9 +34,10 @@ def get_transaction_by_id(search_id: int):
 
 
 def map_row_to_transaction(row) -> Dict[str, Any]:
-    """Transforme une ligne DataFrame en dictionnaire Transaction."""
+    """Nettoie et formate une ligne brute du dataset en objet Transaction."""
     item = row.to_dict()
 
+    # Remplacement des valeurs NaN par None pour la compatibilité JSON
     for key, value in item.items():
         if pd.isna(value):
             item[key] = None
@@ -48,6 +50,7 @@ def map_row_to_transaction(row) -> Dict[str, Any]:
     if err in (0, "0") or pd.isna(err):
         item["errors"] = None
 
+    # Conversion sécurisée du code postal
     if item.get("zip") is not None:
         try:
             item["zip"] = float(item["zip"])
@@ -55,6 +58,7 @@ def map_row_to_transaction(row) -> Dict[str, Any]:
             item["zip"] = None
 
     chip_val = item.get("use_chip")
+    # Gestion des noms par défaut si les colonnes sont absentes
     if "type" not in item:
         if chip_val is not None:
             item["type"] = str(chip_val)
@@ -75,6 +79,7 @@ def map_row_to_transaction(row) -> Dict[str, Any]:
         else:
             item["nameDest"] = "Merchant_Unknown"
 
+    # Ajout d'un montant formaté pour l'interface utilisateur
     raw_amount = item.get('amount')
     if raw_amount is None:
         raw_amount = 0.0
@@ -93,7 +98,7 @@ def get_transactions(
     min_amount: Optional[float] = None,
     max_amount: Optional[float] = None,
 ):
-    """Récupère les transactions avec pagination et filtres."""
+    """Moteur de recherche avec filtres multicritères et pagination."""
     df = get_data()
 
     if df.empty:
@@ -109,6 +114,7 @@ def get_transactions(
 
     filtered = df
 
+    # Application des filtres selon les critères fournis par l'utilisateur
     if type and "use_chip" in filtered.columns:
         filtered = filtered[filtered["use_chip"] == type]
 
@@ -118,6 +124,7 @@ def get_transactions(
     if max_amount is not None and "amount" in filtered.columns:
         filtered = filtered[filtered["amount"].abs() <= max_amount]
 
+    # Calcul des métadonnées de pagination
     total_items = len(filtered)
 
     total_pages = math.ceil(total_items / limit)
@@ -125,6 +132,7 @@ def get_transactions(
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
 
+    # Extraction de la portion de données correspondant à la page
     paginated_data = filtered.iloc[start_idx:end_idx]
 
     results = [
@@ -158,6 +166,7 @@ def get_recent_transactions(n: int):
 
 
 def get_transactions_by_customer(customer_id: int):
+    """Récupère l'historique récent d'un client spécifique (max 50)."""
     df = get_data()
 
     if df.empty or "client_id" not in df.columns:
@@ -172,6 +181,7 @@ def get_transactions_by_customer(customer_id: int):
 
 
 def get_transactions_to_merchant(merchant_id: int):
+    """Récupère l'historique récent d'un marchand spécifique (max 50)."""
     df = get_data()
 
     if df.empty or "merchant_id" not in df.columns:

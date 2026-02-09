@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     yield
     print("Arrêt de l'API.")
 
-
+# Initialisation de l'instance FastAPI avec métadonnées et lifespan
 app = FastAPI(
     title="Banking Transactions API",
     description="API for banking transaction management and analysis",
@@ -31,7 +31,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Branchement
+# Inclusion des routeurs pour structurer les endpoints par catégories
 app.include_router(transactions.router)
 app.include_router(stats.router)
 app.include_router(customers.router)
@@ -41,4 +41,5 @@ app.include_router(system.router)
 
 @app.get("/")
 def read_root():
+    """Route racine pour tester la disponibilité immédiate de l'API."""
     return {"message": "API is running correctly"}

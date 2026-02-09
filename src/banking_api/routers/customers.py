@@ -2,23 +2,27 @@ from typing import Optional, Dict
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+# Import des fonctions logiques depuis le service customer
 from src.banking_api.services.customer_service import (
     get_all_customers,
     get_top_customers,
     get_customer_profile
 )
 
+# Configuration du routeur avec préfixe et tag pour la doc Swagger
 router = APIRouter(prefix="/api/customers", tags=["Customers"])
 
 
-# --- Modèles Pydantic ---
+# --- Modèles Pydantic pour la validation des données entrantes/sortantes ---
 
 class Customer(BaseModel):
+    """Modèle représentant un client individuel."""
     id: int
     name: str
 
 
 class CustomerPagination(BaseModel):
+    """Modèle pour la gestion de la liste paginée des clients."""
     page: int
     total_items: int
     customers: Dict[int, Customer]
@@ -26,6 +30,7 @@ class CustomerPagination(BaseModel):
 
 
 class CustomerStats(BaseModel):
+    """Statistiques financières détaillées d'un client."""
     transaction_count: int
     total_spent: float
     total_received: float
@@ -33,6 +38,7 @@ class CustomerStats(BaseModel):
 
 
 class CustomerProfile(BaseModel):
+    """Profil complet combinant identité et statistiques."""
     id: int
     name: str
     stats: CustomerStats

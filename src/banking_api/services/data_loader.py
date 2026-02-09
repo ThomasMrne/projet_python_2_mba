@@ -3,16 +3,18 @@ import numpy as np
 import os
 from pathlib import Path
 
+# Variable globale pour stocker les données en mémoire vive (RAM)
 global_dataframe = pd.DataFrame()
 
 
 def clean_currency_col(df, col):
-    """Nettoie une colonne monétaire en gérant les types mixtes."""
+    """Nettoie une colonne monétaire en retirant les symboles parasites."""
     if col not in df.columns:
         return
-    # Conversion en string pour le nettoyage, puis conversion numérique
+    # Transforme tout en texte pour supprimer les $ et les virgules
     s = df[col].astype(str).str.replace("$", "", regex=False)
     s = s.str.replace(",", "", regex=False)
+    # Conversion finale en nombre (float)
     df[col] = pd.to_numeric(s, errors="coerce")
 
 
@@ -20,6 +22,7 @@ def load_dataset():
     """Charge le dataset avec un typage strict pour les calculs."""
     global global_dataframe
 
+    # Détermination dynamique du chemin du fichier CSV
     root = Path(__file__).resolve().parents[3]
     default_path = root / "data" / "transactions.csv"
 
@@ -39,16 +42,17 @@ def load_dataset():
         for col in numeric_cols:
             clean_currency_col(df, col)
 
-        # 2. Conversion des labels de fraude
+        # 2. Conversion des indicateurs de fraude en nombres (0 ou 1)
         for col in ["isFraud", "isFlaggedFraud"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
 
-        # 3. REMPLISSAGE DIFFÉRENCIÉ
+        # 3. Traitement intelligent des valeurs manquantes (NaN)
+        # On remplit les nombres avec 0.0 pour ne pas casser les calculs
         num_cols = df.select_dtypes(include=[np.number]).columns
         df[num_cols] = df[num_cols].fillna(0.0)
 
-        # On remplit les colonnes de texte avec une chaîne vide
+        # On remplit le texte avec des chaînes vides pour la clarté
         obj_cols = df.select_dtypes(exclude=[np.number]).columns
         df[obj_cols] = df[obj_cols].fillna("")
 
@@ -61,5 +65,5 @@ def load_dataset():
 
 
 def get_data() -> pd.DataFrame:
-    """Renvoie le dataframe chargé."""
+    """Fournit l'accès aux données chargées aux autres services."""
     return global_dataframe
