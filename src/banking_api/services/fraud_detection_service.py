@@ -46,7 +46,7 @@ def predict_fraud(amount: float, tx_type: str, old_bal:
                   float = 0, new_bal: float = 0):
     """
     Algorithme de détection de risque basé sur des règles.
-    Prend désormais en compte l'évolution du solde du compte.
+    Prend en compte l'évolution du solde du compte.
     """
     prob = 0.1
 
